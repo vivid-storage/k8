@@ -1,3 +1,5 @@
+import os
+
 from kubernetes import client, config
 from shiny import App, reactive, render, ui
 
@@ -13,7 +15,16 @@ def load_incluster_config():
 
 # List all pods
 def list_all_pods():
-    v1 = client.CoreV1Api()
+    k8s_host = os.environ.get("KUBERNETES_SERVICE_HOST")
+    k8s_port = os.environ.get("KUBERNETES_SERVICE_PORT", "443")
+    if k8s_host:
+        configuration = client.Configuration()
+        configuration.host = f"https://{k8s_host}:{k8s_port}"
+        configuration.verify_ssl = False
+        api_client = client.ApiClient(configuration)
+        v1 = client.CoreV1Api(api_client)
+    else:
+        v1 = client.CoreV1Api()
     ret = v1.list_pod_for_all_namespaces(watch=False)
     return ret.items
 
